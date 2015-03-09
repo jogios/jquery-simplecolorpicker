@@ -1,63 +1,20 @@
-/**
- * Very simple jQuery Color Picker.
+/*
+ * Very simple jQuery Color Picker
+ * https://github.com/tkrotoff/jquery-simplecolorpicker
  *
- * Copyright (C) 2012 Tanguy Krotoff
+ * Copyright (C) 2012-2013 Tanguy Krotoff <tkrotoff@gmail.com>
  *
- * Licensed under the MIT license.
+ * Licensed under the MIT license
  */
 
 (function($) {
-  "use strict";
+  'use strict';
 
   /**
    * Constructor.
    */
-  var SimpleColorPicker = function(element, options) {
-    this.select = $(element);
-    this.options = $.extend({}, $.fn.simplecolorpicker.defaults, options);
-
-    this.select.hide();
-
-    // Trick: fix span alignment
-    // When a span does not contain any text, its alignment is not correct
-    var fakeText = '&nbsp;&nbsp;&nbsp;&nbsp;';
-
-    // Build the list of colors
-    // <div class="selected" title="Green" style="background-color: #7bd148;" role="button"></div>
-    var colorList = '';
-    $('option', this.select).each(function() {
-      var option = $(this);
-      var color = option.val();
-      var title = option.text();
-      var selected = '';
-      if (option.attr('selected')) {
-        selected = 'class="selected"';
-      }
-      colorList += '<div ' + selected + ' title="' + title + '" style="background-color: ' + color + ';" role="button" tabindex="0">'
-                   + fakeText
-                   + '</div>';
-    });
-
-    if (this.options.picker) {
-      var selectText = this.select.find('option:selected').text();
-      var selectValue = this.select.val();
-      this.icon = $('<span class="simplecolorpicker icon" title="' + selectText + '" style="background-color: ' + selectValue + ';" role="button" tabindex="0">'
-                    + fakeText
-                    + '</span>').insertAfter(this.select);
-      this.icon.on('click', $.proxy(this.show, this));
-
-      this.picker = $('<span class="simplecolorpicker picker"></span>').appendTo(document.body);
-      this.picker.html(colorList);
-      this.picker.on('click', $.proxy(this.click, this));
-
-      // Hide picker when clicking outside
-      $(document).on('mousedown', $.proxy(this.hide, this));
-      this.picker.on('mousedown', $.proxy(this.mousedown, this));
-    } else {
-      this.inline = $('<span class="simplecolorpicker inline"></span>').insertAfter(this.select);
-      this.inline.html(colorList);
-      this.inline.on('click', $.proxy(this.click, this));
-    }
+  var SimpleColorPicker = function(select, options) {
+    this.init('simplecolorpicker', select, options);
   };
 
   /**
@@ -66,45 +23,153 @@
   SimpleColorPicker.prototype = {
     constructor: SimpleColorPicker,
 
-    show: function() {
-      var bootstrapArrowWidth = 16; // Empirical value
-      var pos = this.icon.offset();
-      this.picker.css({
-        left: pos.left + this.icon.width() / 2 - bootstrapArrowWidth, // Middle of the icon
-        top: pos.top + this.icon.outerHeight()
+    init: function(type, select, options) {
+      var self = this;
+
+      self.type = type;
+
+      self.$select = $(select);
+      self.$select.hide();
+
+      self.options = $.extend({}, $.fn.simplecolorpicker.defaults, options);
+
+      self.$colorList = null;
+
+      if (self.options.picker === true) {
+        var selectText = self.$select.find('> option:selected').text();
+        self.$icon = $('<span class="simplecolorpicker icon"'
+                     + ' title="' + selectText + '"'
+                     + ' style="background-color: ' + self.$select.val() + ';"'
+                     + ' role="button" tabindex="0">'
+                     + '</span>').insertAfter(self.$select);
+        self.$icon.on('click.' + self.type, $.proxy(self.showPicker, self));
+
+        self.$picker = $('<span class="simplecolorpicker picker ' + self.options.theme + '"></span>').appendTo(document.body);
+        self.$colorList = self.$picker;
+
+        // Hide picker when clicking outside
+        $(document).on('mousedown.' + self.type, $.proxy(self.hidePicker, self));
+        self.$picker.on('mousedown.' + self.type, $.proxy(self.mousedown, self));
+      } else {
+        self.$inline = $('<span class="simplecolorpicker inline ' + self.options.theme + '"></span>').insertAfter(self.$select);
+        self.$colorList = self.$inline;
+      }
+
+      // Build the list of colors
+      // <span class="color selected" title="Green" style="background-color: #7bd148;" role="button"></span>
+      self.$select.find('> option').each(function() {
+        var $option = $(this);
+        var color = $option.val();
+
+        var isSelected = $option.is(':selected');
+        var isDisabled = $option.is(':disabled');
+
+        var selected = '';
+        if (isSelected === true) {
+          selected = ' data-selected';
+        }
+
+        var disabled = '';
+        if (isDisabled === true) {
+          disabled = ' data-disabled';
+        }
+
+        var title = '';
+        if (isDisabled === false) {
+          title = ' title="' + $option.text() + '"';
+        }
+
+        var role = '';
+        if (isDisabled === false) {
+          role = ' role="button" tabindex="0"';
+        }
+
+        var $colorSpan = $('<span class="color"'
+                         + title
+                         + ' style="background-color: ' + color + ';"'
+                         + ' data-color="' + color + '"'
+                         + selected
+                         + disabled
+                         + role + '>'
+                         + '</span>');
+
+        self.$colorList.append($colorSpan);
+        $colorSpan.on('click.' + self.type, $.proxy(self.colorSpanClicked, self));
+
+        var $next = $option.next();
+        if ($next.is('optgroup') === true) {
+          // Vertical break, like hr
+          self.$colorList.append('<span class="vr"></span>');
+        }
+      });
+    },
+
+    /**
+     * Changes the selected color.
+     *
+     * @param color the hexadecimal color to select, ex: '#fbd75b'
+     */
+    selectColor: function(color) {
+      var self = this;
+
+      var $colorSpan = self.$colorList.find('> span.color').filter(function() {
+        return $(this).data('color').toLowerCase() === color.toLowerCase();
       });
 
-      this.picker.show(this.options.delay);
+      if ($colorSpan.length > 0) {
+        self.selectColorSpan($colorSpan);
+      } else {
+        console.error("The given color '" + color + "' could not be found");
+      }
     },
 
-    hide: function() {
-      this.picker.hide(this.options.delay);
+    showPicker: function() {
+      var pos = this.$icon.offset();
+      this.$picker.css({
+        // Remove some pixels to align the picker icon with the icons inside the dropdown
+        left: pos.left - 6,
+        top: pos.top + this.$icon.outerHeight()
+      });
+
+      this.$picker.show(this.options.pickerDelay);
     },
 
-    click: function(e) {
-      var target = $(e.target);
-      if (target.length === 1) {
-        if (target[0].nodeName.toLowerCase() === 'div') {
-          // When you click on a color
+    hidePicker: function() {
+      this.$picker.hide(this.options.pickerDelay);
+    },
 
-          var color = target.css('background-color');
-          var title = target.attr('title');
+    /**
+     * Selects the given span inside $colorList.
+     *
+     * The given span becomes the selected one.
+     * It also changes the HTML select value, this will emit the 'change' event.
+     */
+    selectColorSpan: function($colorSpan) {
+      var color = $colorSpan.data('color');
+      var title = $colorSpan.prop('title');
 
-          // Mark this div as the selected one
-          target.siblings().removeClass('selected');
-          target.addClass('selected');
+      // Mark this span as the selected one
+      $colorSpan.siblings().removeAttr('data-selected');
+      $colorSpan.attr('data-selected', '');
 
-          if (this.options.picker) {
-            this.icon.css('background-color', color);
-            this.icon.attr('title', title);
+      if (this.options.picker === true) {
+        this.$icon.css('background-color', color);
+        this.$icon.prop('title', title);
+        this.hidePicker();
+      }
 
-            // Hide the picker
-            this.hide();
-          }
+      // Change HTML select value
+      this.$select.val(color);
+    },
 
-          // Change select value
-          this.select.val(this.rgb2hex(color)).change();
-        }
+    /**
+     * The user clicked on a color inside $colorList.
+     */
+    colorSpanClicked: function(e) {
+      // When a color is clicked, make it the new selected one (unless disabled)
+      if ($(e.target).is('[data-disabled]') === false) {
+        this.selectColorSpan($(e.target));
+        this.$select.trigger('change');
       }
     },
 
@@ -116,56 +181,55 @@
       e.preventDefault();
     },
 
-    /**
-     * Converts a RGB color to its hexadecimal value.
-     *
-     * See http://stackoverflow.com/questions/1740700/get-hex-value-rather-than-rgb-value-using-jquery
-     */
-    rgb2hex: function(rgb) {
-      function hex(x) {
-        return ("0" + parseInt(x, 10).toString(16)).slice(-2);
+    destroy: function() {
+      if (this.options.picker === true) {
+        this.$icon.off('.' + this.type);
+        this.$icon.remove();
+        $(document).off('.' + this.type);
       }
 
-      var matches = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
-      if (matches === null) {
-        // Fix for Internet Explorer < 9
-        // Variable rgb is already a hexadecimal value
-        return rgb;
-      } else {
-        return "#" + hex(matches[1]) + hex(matches[2]) + hex(matches[3]);
-      }
+      this.$colorList.off('.' + this.type);
+      this.$colorList.remove();
+
+      this.$select.removeData(this.type);
+      this.$select.show();
     }
   };
 
   /**
    * Plugin definition.
+   * How to use: $('#id').simplecolorpicker()
    */
   $.fn.simplecolorpicker = function(option) {
+    var args = $.makeArray(arguments);
+    args.shift();
+
     // For HTML element passed to the plugin
     return this.each(function() {
       var $this = $(this),
         data = $this.data('simplecolorpicker'),
         options = typeof option === 'object' && option;
-      if (!data) {
+      if (data === undefined) {
         $this.data('simplecolorpicker', (data = new SimpleColorPicker(this, options)));
       }
       if (typeof option === 'string') {
-        data[option]();
+        data[option].apply(data, args);
       }
     });
   };
-
-  $.fn.simplecolorpicker.Constructor = SimpleColorPicker;
 
   /**
    * Default options.
    */
   $.fn.simplecolorpicker.defaults = {
-    // Animation delay
-    delay: 0,
+    // No theme by default
+    theme: '',
 
     // Show the picker or make it inline
-    picker: false
+    picker: false,
+
+    // Animation delay in milliseconds
+    pickerDelay: 0
   };
 
 })(jQuery);

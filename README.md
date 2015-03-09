@@ -1,31 +1,20 @@
 # Very simple jQuery color picker
 
-Yet another jQuery color picker. This plugin is unobtrusive and integrates well with Twitter Bootstrap.
+Yet another jQuery color picker. This plugin is unobtrusive and integrates well with Twitter Bootstrap (it works just fine without).
 The source code only requires jQuery and is about 200 lines of JavaScript and 100 lines of CSS.
 
-* By default it shows the colors inline:
+See the [online demo](http://plnkr.co/edit/VVclW0?p=preview).
 
-![simplecolorpicker-inline.png](http://img15.hostingpics.net/pics/179473simplecolorpickerinline.png)
+![simplecolorpicker-inline.png](http://img11.hostingpics.net/pics/75504320131025121603ColorpickerforjQuery.png)
 
-* You can show the colors inside a picker:
-
-![simplecolorpicker-picker.png](http://img15.hostingpics.net/pics/748637simplecolorpickerpicker.png)
-
-* It integrates well with Twitter Bootstrap if you use this framework:
-
-![simplecolorpicker-inline-bootstrap.png](http://img15.hostingpics.net/pics/516842simplecolorpickerinlinebootstrap.png)
-
-* And the whole is unobtrusive and based on the regular HTML select tag:
-
-![simplecolorpicker-select.png](http://img15.hostingpics.net/pics/368680simplecolorpickerselect.png)
+![simplecolorpicker-picker.png](http://img11.hostingpics.net/pics/71709820131025122115ColorpickerforjQuery.png)
 
 ## How to use
 
 Create a HTML select:
 
-```html
+```HTML
 <select name="colorpicker">
-  <!-- Colors from Google Calendar -->
   <option value="#7bd148">Green</option>
   <option value="#5484ed">Bold blue</option>
   <option value="#a4bdfc">Blue</option>
@@ -43,37 +32,41 @@ Create a HTML select:
 
 add the plugin files:
 
-```html
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.js"></script>
+```HTML
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.js"></script>
 <script src="jquery.simplecolorpicker.js"></script>
 
-<link rel="stylesheet" type="text/css" href="jquery.simplecolorpicker.css"/>
+<link rel="stylesheet" href="jquery.simplecolorpicker.css">
 ```
 
 then call the plugin:
 
-```javascript
+```JavaScript
 $('select[name="colorpicker"]').simplecolorpicker();
+$('select[name="colorpicker"]').simplecolorpicker('selectColor', '#7bd148');
+$('select[name="colorpicker"]').simplecolorpicker('destroy');
 ```
 
 and pass some options if needed:
 
-```javascript
+```JavaScript
 $('select[name="colorpicker"]').simplecolorpicker({
   picker: true
-}).change(function() {
+}).on('change', function() {
   $(document.body).css('background-color', $('select[name="colorpicker"]').val());
 });
 ```
 
 ### Options
 
-- picker: show the colors inside a picker instead of inline (default: false)
-- delay: show and hide animation delay (default: 0)
+- theme: font to use for the ok/check mark (default: `''`), available themes: [`regularfont`](https://github.com/tkrotoff/jquery-simplecolorpicker/blob/master/jquery.simplecolorpicker-regularfont.css), [`fontawesome`](https://github.com/tkrotoff/jquery-simplecolorpicker/blob/master/jquery.simplecolorpicker-fontawesome.css), [`glyphicons`](https://github.com/tkrotoff/jquery-simplecolorpicker/blob/master/jquery.simplecolorpicker-glyphicons.css)
+- picker: show the colors inside a picker instead of inline (default: `false`)
+- pickerDelay: show and hide animation delay in milliseconds (default: `0`)
 
 ## Browser support
 
 Simplecolorpicker supports all modern browsers starting with Internet Explorer 8 included.
+It is recommended to not use any font theme with IE8.
 
 ## HTML5 new color input
 
@@ -85,6 +78,20 @@ See http://slides.html5rocks.com/#new-form-types
 
 See http://dev.w3.org/html5/markup/input.color.html#input.color
 
+## Bower
+
+```
+bower install jquery-simplecolorpicker
+```
+
+## AngularJS directive
+
+See [simplecolorpicker directive](http://plnkr.co/edit/rKM3QWXDC3vGVPe3QFWV?p=preview).
+If you find a solution for the `setTimeout()` hack, please tell me.
+
+Here [another directive](http://plnkr.co/edit/zlP0RSH3m0ghsefHeaLI?p=preview) written by [KGZM](https://github.com/KGZM) that re-implements simplecolorpicker.
+For the explanations, read this [Google Groups discussion](https://groups.google.com/d/topic/angular/nBZsvLOZxvI/discussion).
+
 ## Ruby on Rails
 
 A gem is available at https://github.com/tkrotoff/jquery-simplecolorpicker-rails
@@ -92,4 +99,4 @@ A gem is available at https://github.com/tkrotoff/jquery-simplecolorpicker-rails
 ## Copyright and license
 
 Licensed under the MIT license.
-Copyright (C) 2012 Tanguy Krotoff
+Copyright (C) 2012-2013 Tanguy Krotoff
